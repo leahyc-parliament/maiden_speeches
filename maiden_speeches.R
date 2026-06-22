@@ -39,8 +39,8 @@ ids <- maiden_speech_table$id
 get_mp_data <- function(id) {
   url <- sprintf("https://members-api.parliament.uk/api/Members/%s", id)
 
-  response <- request(url) |> 
-    req_perform() |> 
+  response <- request(url) |>
+    req_perform() |>
     resp_body_json()
 }
 
@@ -49,10 +49,20 @@ mp_data <- lapply(ids, get_mp_data)
 
 # extract MPs party and member
 party_const <- tibble(
-  id    = map_chr(mp_data, ~ as.character(.x$value$id)),
+  id = map_chr(mp_data, ~ as.character(.x$value$id)),
   party = map_chr(mp_data, ~ .x$value$latestParty$name),
-  constituency = map_chr(mp_data, ~ .x$value$latestHouseMembership$membershipFrom)
+  constituency = map_chr(
+    mp_data,
+    ~ .x$value$latestHouseMembership$membershipFrom
+  )
 )
 
-maiden_speech_table <- mps |> 
-  left_join(party_const, by = c("id" = "id"))
+maiden_speech_table <- mps |>
+  left_join(party_const, by = c("id" = "id")) |>
+  select(-id) |>
+  mutate(name = sub("^Mr\\s+", "", name))
+
+write.csv(maiden_speech_table, "maiden_speech_table.csv", row.names = FALSE)
+saveRDS(maiden_speech_table, "maiden_speech_table.rds")
+
+
